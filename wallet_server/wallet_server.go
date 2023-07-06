@@ -38,6 +38,8 @@ func (ws *WalletServer) Index(w http.ResponseWriter, req *http.Request) {
 }
 
 func (ws *WalletServer) Run() {
+	server := "0.0.0.0:" + strconv.Itoa(int(ws.Port()))
+	sugar.Infof("Starting Wallet Server at " + server)
 	http.HandleFunc("/", ws.Index)
-	log.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(ws.Port())), nil))
+	log.Fatal(http.ListenAndServe(server, nil))
 }

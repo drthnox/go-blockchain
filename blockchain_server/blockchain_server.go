@@ -1,8 +1,8 @@
 package main
 
 import (
-	"goblockchain/block"
-	"goblockchain/wallet"
+	"go-blockchain/block"
+	"go-blockchain/wallet"
 	"io"
 	"log"
 	"net/http"
@@ -50,6 +50,8 @@ func (bcs *BlockchainServer) GetChain(w http.ResponseWriter, req *http.Request) 
 }
 
 func (bcs *BlockchainServer) Run() {
+	server := "0.0.0.0:" + strconv.Itoa(int(bcs.Port()))
+	sugar.Infof("Starting Blockchain Server at " + server)
 	http.HandleFunc("/", bcs.GetChain)
-	log.Fatal(http.ListenAndServe("0.0.0.0:"+strconv.Itoa(int(bcs.Port())), nil))
+	log.Fatal(http.ListenAndServe(server, nil))
 }
