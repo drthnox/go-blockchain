@@ -25,7 +25,31 @@
                 let confirm_result = confirm(confirm_text)
                 if (confirm_result !== true) {
                     alert('Cancelled')
+                    return
                 }
+
+                let transaction_data = {
+                    'sender_private_key': $('#private_key').val(),
+                    'sender_public_key' : $('#public_key').val(),
+                    'recipient_blockchain_address': $('#recipient_blockchain_address').val(),
+                    'value' : $('#send_amount').val(),
+                    'sender_blockchain_address' : $('#blockchain_address').val(),
+                };
+
+                $.ajax({
+                    url: '/transaction',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(transaction_data),
+                    success: function(response) {
+                        console.info(response);
+                        alert('Send success');
+                    },
+                    error: function(response) {
+                        console.error(response);
+                        alert('Send failed');
+                    }
+                })
             })
         })
 

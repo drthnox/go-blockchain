@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
+	"go-blockchain/utils"
 	"go-blockchain/wallet"
 	"html/template"
 	"io"
-	"log"
+	//"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"path"
 	"strconv"
@@ -52,10 +55,39 @@ func (ws *WalletServer) Wallet(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		//io.WriteString(w, string(utils.JsonStatus("success")))
+		decoder := json.NewDecoder(req.Body)
+		var t wallet.TransactionRequest
+		err := decoder.Decode(&t)
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			io.WriteString(w, string(utils.JsonStatus("fail")))
+			return
+		}
+		if !t.Validate() {
+			log.Println("ERROR: Missing fields")
+			io.WriteString(w, string(utils.JsonStatus("fail")))
+			return
+		}
+		log.Println(*t.SenderPublicKey)
+		log.Println(*t.SenderPrivateKey)
+		log.Println(*t.SenderBlockchainAddress)
+		log.Println(*t.Value)
+
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		log.Println("ERROR: Invalid HTTP Method")
+	}
+}
+
 func (ws *WalletServer) Run() {
 	server := "0.0.0.0:" + strconv.Itoa(int(ws.Port()))
 	sugar.Infof("Starting Wallet Server at " + server)
 	http.HandleFunc("/", ws.Index)
 	http.HandleFunc("/wallet", ws.Wallet)
+	http.HandleFunc("/transaction", ws.CreateTransaction)
 	log.Fatal(http.ListenAndServe(server, nil))
 }
