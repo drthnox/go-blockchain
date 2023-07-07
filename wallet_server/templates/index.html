@@ -15,8 +15,16 @@
                     $('#blockchain_address').val(response['blockchain_address']);
                     console.info(response);
                 },
-                error: function(error) {
+                error: function (error) {
                     console.error(error);
+                }
+            });
+
+            $('#send_money_button').on("click", function() {
+                let confirm_text = 'Are you sure to send?'
+                let confirm_result = confirm(confirm_text)
+                if (confirm_result !== true) {
+                    alert('Cancelled')
                 }
             })
         })
@@ -30,10 +38,10 @@
     <div id="wallet_amount">0</div>
     <button id="reload_wallet">Reload Wallet</button>
 
-    <p>Public  Key</p>
+    <p>Public Key</p>
     <textarea id="public_key" rows="2" cols="100"></textarea>
 
-    <p>Private  Key</p>
+    <p>Private Key</p>
     <textarea id="private_key" rows="1" cols="100"></textarea>
 
     <p>Blockchain Address</p>
