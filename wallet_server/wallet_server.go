@@ -6,8 +6,7 @@ import (
 	"go-blockchain/wallet"
 	"html/template"
 	"io"
-	//"log"
-	log "github.com/sirupsen/logrus"
+	"log"
 	"net/http"
 	"path"
 	"strconv"
@@ -85,7 +84,7 @@ func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Reque
 
 func (ws *WalletServer) Run() {
 	server := "0.0.0.0:" + strconv.Itoa(int(ws.Port()))
-	sugar.Infof("Starting Wallet Server at " + server)
+	log.Println("Starting Wallet Server at " + server)
 	http.HandleFunc("/", ws.Index)
 	http.HandleFunc("/wallet", ws.Wallet)
 	http.HandleFunc("/transaction", ws.CreateTransaction)

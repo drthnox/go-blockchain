@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"log"
@@ -13,7 +14,7 @@ var sugar *zap.SugaredLogger
 var config *viper.Viper
 
 func init() {
-
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 }
 
 func main() {
@@ -21,24 +22,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	// Print the absolute path of the file
-	log.Printf("=====> %s", absPath)
-	config := viper.New()
 	file := filepath.Join(absPath, ".env")
+	config := viper.New()
 	config.SetConfigFile(file)
 	config.SetConfigType("json")
+	env := config.GetString("env")
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if strings.ToLower(env) == "dev" {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 	if err := config.ReadInConfig(); err != nil {
 		log.Fatalf("Error to reading config file, %s", err)
 	}
-	env := config.GetString("env")
-	logger, _ := zap.NewProduction()
-	if strings.ToLower(env) == "dev" {
-		logger, _ = zap.NewDevelopment()
-	}
-	defer logger.Sync() // flushes buffer, if any
-	sugar = logger.Sugar()
-	sugar.Named("BlockchainServer")
 	port := flag.Uint("port", config.GetUint("port"), "TCP Port Number for Blockchain Server")
 	flag.Parse()
 	app := NewBlockchainServer(uint16(*port))
