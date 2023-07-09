@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	log "github.com/sirupsen/logrus"
+	"go-blockchain/utils"
+
 	//"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 	"path/filepath"
@@ -20,6 +22,16 @@ func main() {
 }
 
 func initGateway() (uint16, string) {
+	host := *flag.String("host", config.GetString("host"), "TCP IP Address for Wallet Server")
+	if !utils.CheckIPAddress(host) {
+		log.Errorf("ERROR: host IP invalid: %s - looking for env setting", host)
+		host = config.GetString("host")
+		if !utils.CheckIPAddress(host) {
+			log.Errorf("ERROR: config host IP invalid: %s", host)
+			log.Info("Falling back to default host: 0.0.0.0")
+			host = "0.0.0.0"
+		}
+	}
 	port := *flag.Int("port", config.GetInt("port"), "TCP Port Number for Wallet Server")
 	s := "http://127.0.0.1:" + strconv.Itoa(port)
 	gateway := *flag.String("gateway", "http://127.0.0.1:"+s, "Blockchain Gateway")
