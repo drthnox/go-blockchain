@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	log "github.com/sirupsen/logrus"
+	"go-blockchain/block"
 	"go-blockchain/utils"
 	"go-blockchain/wallet"
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 	"path"
 	"strconv"
@@ -37,7 +39,7 @@ func (ws *WalletServer) Index(w http.ResponseWriter, req *http.Request) {
 		t, _ := template.ParseFiles(path.Join(tempDir, "index.html"))
 		t.Execute(w, "")
 	default:
-		log.Printf("ERROR: Invalid HTTP Method")
+		log.Error("ERROR: Invalid HTTP Method")
 	}
 }
 
@@ -57,36 +59,74 @@ func (ws *WalletServer) Wallet(w http.ResponseWriter, req *http.Request) {
 func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		//io.WriteString(w, string(utils.JsonStatus("success")))
 		decoder := json.NewDecoder(req.Body)
 		var t wallet.TransactionRequest
 		err := decoder.Decode(&t)
 		if err != nil {
-			log.Printf("ERROR: %v", err)
+			log.Fatalf("ERROR: %v", err)
 			io.WriteString(w, string(utils.JsonStatus("fail")))
 			return
 		}
 		if !t.Validate() {
-			log.Println("ERROR: Missing fields")
+			log.Fatal("ERROR: Missing fields")
 			io.WriteString(w, string(utils.JsonStatus("fail")))
 			return
 		}
-		log.Println(*t.SenderPublicKey)
-		log.Println(*t.SenderPrivateKey)
-		log.Println(*t.SenderBlockchainAddress)
-		log.Println(*t.Value)
+
+		publicKey := utils.PublicKeyFromString(*t.SenderPublicKey)
+		privateKey := utils.PrivateKeyFromString(*t.SenderPrivateKey, publicKey)
+		value, err := strconv.ParseFloat(*t.Value, 32)
+		if err != nil {
+			log.Error("ERROR: parse error")
+			io.WriteString(w, string(utils.JsonStatus("fail")))
+			return
+		}
+		value32 := float32(value)
+		w.Header().Add("Content-Type", "application/json")
+		transaction := wallet.NewTransaction(privateKey, publicKey, *t.SenderBlockchainAddress, *t.RecipientBlockchainAddress, value32)
+		signature := transaction.GenerateSignature()
+		signatureStr := signature.String()
+		bt := &block.TransactionRequest{
+			SenderBlockchainAddress:    t.SenderBlockchainAddress,
+			RecipientBlockchainAddress: t.RecipientBlockchainAddress,
+			SenderPublicKey:            t.SenderPublicKey,
+			Value:                      &value32,
+			Signature:                  &signatureStr,
+		}
+		m, err := json.Marshal(bt)
+		if err != nil {
+			log.Error("ERROR: Cannot marshall block transaction request")
+			io.WriteString(w, string(utils.JsonStatus("fail")))
+			return
+		}
+		buf := bytes.NewBuffer(m)
+		resp, err := http.Post(ws.Gateway()+"/transactions", "application/json", buf)
+		if err != nil {
+			log.Error("ERROR: Call to blockchain server via gateway " + ws.Gateway() + " failed")
+			io.WriteString(w, string(utils.JsonStatus("fail")))
+			return
+		}
+		if resp.StatusCode != http.StatusCreated {
+			io.WriteString(w, string(utils.JsonStatus("fail")))
+			return
+		}
+		io.WriteString(w, string(utils.JsonStatus("success")))
 
 	default:
 		w.WriteHeader(http.StatusBadRequest)
-		log.Println("ERROR: Invalid HTTP Method")
+		log.Error("ERROR: Invalid HTTP Method")
 	}
 }
 
 func (ws *WalletServer) Run() {
 	server := "0.0.0.0:" + strconv.Itoa(int(ws.Port()))
-	log.Println("Starting Wallet Server at " + server)
+	log.Infof("Starting Wallet Server at %s", server)
+	ws.RegisterHandlers()
+	log.Fatal(http.ListenAndServe(server, nil))
+}
+
+func (ws *WalletServer) RegisterHandlers() {
 	http.HandleFunc("/", ws.Index)
 	http.HandleFunc("/wallet", ws.Wallet)
 	http.HandleFunc("/transaction", ws.CreateTransaction)
-	log.Fatal(http.ListenAndServe(server, nil))
 }

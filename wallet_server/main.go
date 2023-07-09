@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"github.com/rs/zerolog"
+	log "github.com/sirupsen/logrus"
+	//"github.com/rs/zerolog"
 	"github.com/spf13/viper"
-	"log"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -13,31 +13,25 @@ import (
 var config viper.Viper
 var env string
 
-func init() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-}
-
 func main() {
 	initConfig()
 	initLogging()
-	port, gateway := initGateway()
-	app := NewWalletServer(uint16(port), *gateway)
-	app.Run()
+	NewWalletServer(initGateway()).Run()
 }
 
-func initGateway() (int, *string) {
+func initGateway() (uint16, string) {
 	port := *flag.Int("port", config.GetInt("port"), "TCP Port Number for Wallet Server")
 	s := "http://127.0.0.1:" + strconv.Itoa(port)
-	gateway := flag.String("gateway", "http://127.0.0.1:"+s, "Blockchain Gateway")
+	gateway := *flag.String("gateway", "http://127.0.0.1:"+s, "Blockchain Gateway")
 	flag.Parse()
-	return port, gateway
+	return uint16(port), gateway
 }
 
 func initLogging() {
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	log.SetLevel(log.InfoLevel)
 	env := config.GetString("env")
 	if strings.ToLower(env) == "dev" {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.SetLevel(log.DebugLevel)
 	}
 }
 
@@ -46,7 +40,7 @@ func initConfig() {
 	if err != nil {
 		panic(err)
 	}
-	config := viper.New()
+	config = *viper.New()
 	file := filepath.Join(absPath, ".env")
 	config.SetConfigFile(file)
 	config.SetConfigType("json")

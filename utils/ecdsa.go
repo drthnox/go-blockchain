@@ -14,7 +14,7 @@ type Signature struct {
 }
 
 func (s *Signature) String() string {
-	return fmt.Sprintf("%x%x", s.R, s.S)
+	return fmt.Sprintf("%064x%064x", s.R, s.S)
 }
 
 func String2BigIntTuple(s string) (big.Int, big.Int) {
@@ -25,6 +25,11 @@ func String2BigIntTuple(s string) (big.Int, big.Int) {
 	_ = bix.SetBytes(bx)
 	_ = biy.SetBytes(by)
 	return bix, biy
+}
+
+func SignatureFromString(s string) *Signature {
+	x, y := String2BigIntTuple(s)
+	return &Signature{&x, &y}
 }
 
 func PublicKeyFromString(s string) *ecdsa.PublicKey {

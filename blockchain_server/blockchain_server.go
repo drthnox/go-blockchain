@@ -1,10 +1,10 @@
 package main
 
 import (
+	log "github.com/sirupsen/logrus"
 	"go-blockchain/block"
 	"go-blockchain/wallet"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -16,6 +16,7 @@ type BlockchainServer struct {
 }
 
 func NewBlockchainServer(port uint16) *BlockchainServer {
+	log.Debugf("Creating Blockchain Server to use port %d", port)
 	return &BlockchainServer{port}
 }
 
@@ -29,9 +30,9 @@ func (bcs *BlockchainServer) GetBlockchain() *block.Blockchain {
 		minersWallet := wallet.NewWallet()
 		bc = block.NewBlockchain(minersWallet.BlockchainAddress(), bcs.Port())
 		cache["blockchain"] = bc
-		log.Printf("private_key %v", minersWallet.PrivateKeyStr())
-		log.Printf("publick_key %v", minersWallet.PublicKeyStr())
-		log.Printf("blockchain_address %v", minersWallet.BlockchainAddress())
+		log.Infof("private_key %v", minersWallet.PrivateKeyStr())
+		log.Infof("publick_key %v", minersWallet.PublicKeyStr())
+		log.Infof("blockchain_address %v", minersWallet.BlockchainAddress())
 	}
 	return bc
 }
@@ -45,13 +46,16 @@ func (bcs *BlockchainServer) GetChain(w http.ResponseWriter, req *http.Request) 
 		io.WriteString(w, string(m[:]))
 	default:
 		log.Printf("ERROR: Invalid HTTP Method")
-
 	}
 }
 
 func (bcs *BlockchainServer) Run() {
 	server := "0.0.0.0:" + strconv.Itoa(int(bcs.Port()))
-	sugar.Infof("Starting Blockchain Server at " + server)
-	http.HandleFunc("/", bcs.GetChain)
+	log.Infof("Starting Blockchain Server at %s", server)
+	bcs.RegisterHandlers()
 	log.Fatal(http.ListenAndServe(server, nil))
+}
+
+func (bcs *BlockchainServer) RegisterHandlers() {
+	http.HandleFunc("/", bcs.GetChain)
 }
