@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"go-blockchain/block"
 	"go-blockchain/utils"
@@ -119,7 +120,7 @@ func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Reque
 }
 
 func (ws *WalletServer) Run() {
-	server := "0.0.0.0:" + strconv.Itoa(int(ws.Port()))
+	server := fmt.Sprintf("%s:%d", ws.Gateway(), ws.Port())
 	log.Infof("Starting Wallet Server at %s", server)
 	ws.RegisterHandlers()
 	log.Fatal(http.ListenAndServe(server, nil))
