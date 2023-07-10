@@ -42,7 +42,10 @@
                     contentType: 'application/json',
                     data: JSON.stringify(transaction_data),
                     success: function(response) {
-                        console.info(response);
+                        if (response.message === 'fail') {
+                            alert("Send failed")
+                            return
+                        }
                         alert('Send success');
                     },
                     error: function(response) {

@@ -63,11 +63,13 @@ func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Reque
 		decoder := json.NewDecoder(req.Body)
 		var t wallet.TransactionRequest
 		err := decoder.Decode(&t)
+
 		if err != nil {
 			log.Fatalf("ERROR: %v", err)
 			io.WriteString(w, string(utils.JsonStatus("fail")))
 			return
 		}
+
 		if !t.Validate() {
 			log.Fatal("ERROR: Missing fields")
 			io.WriteString(w, string(utils.JsonStatus("fail")))
@@ -101,7 +103,7 @@ func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Reque
 			return
 		}
 		buf := bytes.NewBuffer(m)
-		resp, err := http.Post(ws.Gateway()+"/transactions", "application/json", buf)
+		resp, err := http.Post(ws.Gateway()+":"+strconv.Itoa(int(ws.Port()))+"/transactions", "application/json", buf)
 		if err != nil {
 			log.Error("ERROR: Call to blockchain server via gateway " + ws.Gateway() + " failed")
 			io.WriteString(w, string(utils.JsonStatus("fail")))
