@@ -18,19 +18,24 @@ import (
 const tempDir = "wallet_server/templates"
 
 type WalletServer struct {
+	host    string
 	port    uint16
-	gateway string
+	gateway *Gateway
 }
 
-func NewWalletServer(port uint16, gateway string) *WalletServer {
-	return &WalletServer{port, gateway}
+func NewWalletServer(host string, port uint16, gateway *Gateway) *WalletServer {
+	return &WalletServer{host, port, gateway}
+}
+
+func (ws *WalletServer) Host() string {
+	return ws.host
 }
 
 func (ws *WalletServer) Port() uint16 {
 	return ws.port
 }
 
-func (ws *WalletServer) Gateway() string {
+func (ws *WalletServer) Gateway() *Gateway {
 	return ws.gateway
 }
 
@@ -103,9 +108,9 @@ func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Reque
 			return
 		}
 		buf := bytes.NewBuffer(m)
-		resp, err := http.Post(ws.Gateway()+":"+strconv.Itoa(int(ws.Port()))+"/transactions", "application/json", buf)
+		resp, err := http.Post(ws.Gateway().host+":"+strconv.Itoa(int(ws.Gateway().port))+"/transactions", "application/json", buf)
 		if err != nil {
-			log.Error("ERROR: Call to blockchain server via gateway " + ws.Gateway() + " failed")
+			log.Errorf("ERROR: Call to blockchain server via gateway %s:%d failed", ws.Gateway().host, ws.Gateway().port)
 			io.WriteString(w, string(utils.JsonStatus("fail")))
 			return
 		}
@@ -122,8 +127,9 @@ func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Reque
 }
 
 func (ws *WalletServer) Run() {
-	server := fmt.Sprintf("%s:%d", ws.Gateway(), ws.Port())
-	log.Infof("Starting Wallet Server at %s", server)
+	server := fmt.Sprintf("%s:%d", ws.Host(), ws.Port())
+	log.Infof("Starting Wallet Server at %s:%d", ws.Host(), ws.Port())
+	log.Infof("Using Blockchain Gateway %s:%d", ws.Gateway().host, ws.Gateway().port)
 	ws.RegisterHandlers()
 	log.Fatal(http.ListenAndServe(server, nil))
 }

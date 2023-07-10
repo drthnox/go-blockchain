@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"go-blockchain/block"
+	"go-blockchain/utils"
 	"go-blockchain/wallet"
 	"io"
 	"net/http"
@@ -46,6 +48,57 @@ func (bcs *BlockchainServer) GetChain(w http.ResponseWriter, req *http.Request) 
 		io.WriteString(w, string(m[:]))
 	default:
 		log.Printf("ERROR: Invalid HTTP Method")
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+
+func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		w.Header().Add("Content-Type", "application/json")
+		bc := bcs.GetBlockchain()
+		transactions := bc.TransactionPool()
+		m, _ := json.Marshal(struct {
+			Transactions []*block.Transaction `json:"transactions"`
+			Length       int                  `json:"length"`
+		}{
+			Transactions: transactions,
+			Length:       len(transactions),
+		})
+		io.WriteString(w, string(m))
+
+	case http.MethodPost:
+		decoder := json.NewDecoder(req.Body)
+		var t block.TransactionRequest
+		err := decoder.Decode(&t)
+		if err != nil {
+			log.Errorf("ERROR: %v", err)
+			io.WriteString(w, string(utils.JsonStatus("fail")))
+			return
+		}
+		if !t.Validate() {
+			log.Error("ERROR: Missing fields")
+			io.WriteString(w, string(utils.JsonStatus("fail")))
+			return
+		}
+		publicKey := utils.PublicKeyFromString(*t.SenderPublicKey)
+		signature := utils.SignatureFromString(*t.SenderPublicKey)
+		bc := bcs.GetBlockchain()
+		isCreated := bc.CreateTransaction(*t.SenderBlockchainAddress, *t.RecipientBlockchainAddress, *t.Value, publicKey, signature)
+		w.Header().Add("Content-Type", "application/json")
+		var m []byte
+		if isCreated {
+			w.WriteHeader(http.StatusCreated)
+			m = utils.JsonStatus("success")
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			m = utils.JsonStatus("fail")
+		}
+		io.WriteString(w, string(m))
+
+	default:
+		log.Error("ERROR: Invalid HTTP Method")
+		w.WriteHeader(http.StatusBadRequest)
 	}
 }
 
@@ -58,4 +111,5 @@ func (bcs *BlockchainServer) Run() {
 
 func (bcs *BlockchainServer) RegisterHandlers() {
 	http.HandleFunc("/", bcs.GetChain)
+	http.HandleFunc("/transactions", bcs.Transactions)
 }

@@ -40,7 +40,7 @@ func initConfig() {
 	config.SetConfigFile(file)
 	config.SetConfigType("json")
 	if err := config.ReadInConfig(); err != nil {
-		log.Fatalf("Error to reading config file, %s", err)
+		log.Fatalf("Error reading config file, %s", err)
 	}
 	log.Printf("=====> %d", config.GetUint("port"))
 }
