@@ -57,7 +57,6 @@ func (bcs *BlockchainServer) GetChain(w http.ResponseWriter, req *http.Request) 
 }
 
 func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, req *http.Request) {
-	log.Debug("Handler: Transactions")
 	switch req.Method {
 	case http.MethodGet:
 		w.Header().Add("Content-Type", "application/json")
@@ -70,7 +69,7 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, req *http.Reque
 			Transactions: transactions,
 			Length:       len(transactions),
 		})
-		io.WriteString(w, string(m))
+		io.WriteString(w, string(m[:]))
 
 	case http.MethodPost:
 		decoder := json.NewDecoder(req.Body)
@@ -90,7 +89,6 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, req *http.Reque
 		signature := utils.SignatureFromString(*t.Signature)
 		bc := bcs.GetBlockchain()
 		isCreated := bc.CreateTransaction(*t.SenderBlockchainAddress, *t.RecipientBlockchainAddress, *t.Value, publicKey, signature)
-		w.Header().Add("Content-Type", "application/json")
 		var m []byte
 		if isCreated {
 			w.WriteHeader(http.StatusCreated)
@@ -99,8 +97,62 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, req *http.Reque
 			w.WriteHeader(http.StatusBadRequest)
 			m = utils.JsonStatus("fail")
 		}
-		io.WriteString(w, string(m))
+		w.Header().Add("Content-Type", "application/json")
+		io.WriteString(w, string(m[:]))
 
+	default:
+		log.Error("ERROR: Invalid HTTP Method")
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+
+func (bcs *BlockchainServer) MineBlock(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		w.Header().Add("Content-Type", "application/json")
+		bc := bcs.GetBlockchain()
+		isMined := bc.Mining()
+		var m []byte
+		if !isMined {
+			w.WriteHeader(http.StatusBadRequest)
+			m = utils.JsonStatus("fail")
+		} else {
+			w.WriteHeader(http.StatusCreated)
+			m = utils.JsonStatus("success")
+		}
+		w.Header().Add("Content-Type", "application/json")
+		io.WriteString(w, string(m[:]))
+	default:
+		log.Error("ERROR: Invalid HTTP Method")
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+
+func (bcs *BlockchainServer) StartMine(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		w.Header().Add("Content-Type", "application/json")
+		bc := bcs.GetBlockchain()
+		bc.StartMining()
+		m := utils.JsonStatus("success")
+		io.WriteString(w, string(m[:]))
+	default:
+		log.Error("ERROR: Invalid HTTP Method")
+		w.WriteHeader(http.StatusBadRequest)
+	}
+}
+
+func (bcs *BlockchainServer) GetTotalAmount(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		blockchain_address := req.URL.Query().Get("blockchain_address")
+		bc := bcs.GetBlockchain()
+		totalAmount := bc.CalculateTotalAmount(blockchain_address)
+		amountResponse := &block.AmountResponse{Amount: totalAmount}
+		var m []byte
+		m, _ = amountResponse.MarshalJSON()
+		w.Header().Add("Content-Type", "application/json")
+		io.WriteString(w, string(m[:]))
 	default:
 		log.Error("ERROR: Invalid HTTP Method")
 		w.WriteHeader(http.StatusBadRequest)
@@ -116,5 +168,9 @@ func (bcs *BlockchainServer) Run() {
 
 func (bcs *BlockchainServer) RegisterHandlers() {
 	http.HandleFunc("/", bcs.GetChain)
+	http.HandleFunc("/chain", bcs.GetChain)
 	http.HandleFunc("/transactions", bcs.Transactions)
+	http.HandleFunc("/mine", bcs.MineBlock)
+	http.HandleFunc("/mine/start", bcs.StartMine)
+	http.HandleFunc("/amount", bcs.GetTotalAmount)
 }
