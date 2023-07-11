@@ -13,13 +13,10 @@ var config viper.Viper
 func main() {
 	initConfig()
 	initLogger()
+	host := flag.String("host", config.GetString("host"), "TCP IP for Blockchain Server")
 	port := flag.Uint("port", config.GetUint("port"), "TCP Port Number for Blockchain Server")
 	flag.Parse()
-	if *port == 0 {
-		*port = config.GetUint("port")
-	}
-	log.Debugf("Configured port: %d", *port)
-	NewBlockchainServer(uint16(*port)).Run()
+	NewBlockchainServer(*host, uint16(*port)).Run()
 }
 
 func initLogger() {
@@ -42,5 +39,4 @@ func initConfig() {
 	if err := config.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file, %s", err)
 	}
-	log.Printf("=====> %d", config.GetUint("port"))
 }

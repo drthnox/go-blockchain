@@ -2,26 +2,30 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"go-blockchain/block"
 	"go-blockchain/utils"
 	"go-blockchain/wallet"
 	"io"
 	"net/http"
-	"strconv"
 )
 
 var cache map[string]*block.Blockchain = make(map[string]*block.Blockchain)
 
 type BlockchainServer struct {
+	host string
 	port uint16
 }
 
-func NewBlockchainServer(port uint16) *BlockchainServer {
-	log.Debugf("Creating Blockchain Server to use port %d", port)
-	return &BlockchainServer{port}
+func NewBlockchainServer(host string, port uint16) *BlockchainServer {
+	log.Debugf("Creating Blockchain Server running at %s:%d", host, port)
+	return &BlockchainServer{host, port}
 }
 
+func (bcs *BlockchainServer) Host() string {
+	return bcs.host
+}
 func (bcs *BlockchainServer) Port() uint16 {
 	return bcs.port
 }
@@ -33,7 +37,7 @@ func (bcs *BlockchainServer) GetBlockchain() *block.Blockchain {
 		bc = block.NewBlockchain(minersWallet.BlockchainAddress(), bcs.Port())
 		cache["blockchain"] = bc
 		log.Infof("private_key %v", minersWallet.PrivateKeyStr())
-		log.Infof("publick_key %v", minersWallet.PublicKeyStr())
+		log.Infof("public_key %v", minersWallet.PublicKeyStr())
 		log.Infof("blockchain_address %v", minersWallet.BlockchainAddress())
 	}
 	return bc
@@ -53,6 +57,7 @@ func (bcs *BlockchainServer) GetChain(w http.ResponseWriter, req *http.Request) 
 }
 
 func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, req *http.Request) {
+	log.Debug("Handler: Transactions")
 	switch req.Method {
 	case http.MethodGet:
 		w.Header().Add("Content-Type", "application/json")
@@ -103,7 +108,7 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, req *http.Reque
 }
 
 func (bcs *BlockchainServer) Run() {
-	server := "0.0.0.0:" + strconv.Itoa(int(bcs.Port()))
+	server := fmt.Sprintf("%s:%d", bcs.Host(), int(bcs.Port()))
 	log.Infof("Starting Blockchain Server at %s", server)
 	bcs.RegisterHandlers()
 	log.Fatal(http.ListenAndServe(server, nil))

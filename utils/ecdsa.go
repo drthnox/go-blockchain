@@ -20,10 +20,13 @@ func (s *Signature) String() string {
 func String2BigIntTuple(s string) (big.Int, big.Int) {
 	bx, _ := hex.DecodeString(s[:64])
 	by, _ := hex.DecodeString(s[64:])
+
 	var bix big.Int
 	var biy big.Int
+
 	_ = bix.SetBytes(bx)
 	_ = biy.SetBytes(by)
+
 	return bix, biy
 }
 

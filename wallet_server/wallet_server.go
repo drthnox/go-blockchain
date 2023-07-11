@@ -108,7 +108,9 @@ func (ws *WalletServer) CreateTransaction(w http.ResponseWriter, req *http.Reque
 			return
 		}
 		buf := bytes.NewBuffer(m)
-		resp, err := http.Post(ws.Gateway().host+":"+strconv.Itoa(int(ws.Gateway().port))+"/transactions", "application/json", buf)
+		transactionsUrl := fmt.Sprintf("http://%s:%d/transactions", ws.Gateway().host, ws.Gateway().port)
+		log.Debugf("Calling url: %s", transactionsUrl)
+		resp, err := http.Post(transactionsUrl, "application/json", buf)
 		if err != nil {
 			log.Errorf("ERROR: Call to blockchain server via gateway %s:%d failed", ws.Gateway().host, ws.Gateway().port)
 			io.WriteString(w, string(utils.JsonStatus("fail")))

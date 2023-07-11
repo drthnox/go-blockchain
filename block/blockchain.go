@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"go-blockchain/utils"
-	"log"
 	"strings"
 	"time"
 )
@@ -128,27 +128,32 @@ func (bc *Blockchain) AddTransaction(sender string, recipient string, value floa
 		return true
 	}
 
-	if bc.VerifyTransactionSignature(senderPublicKey, signature, t) {
-		/*
-			if bc.CalculateTotalAmount(sender) < value {
-				log.Println("ERROR: Not enough balance in a wallet")
-				return false
-			}
-		*/
-		bc.transactionPool = append(bc.transactionPool, t)
-		return true
-	} else {
-		log.Println("ERROR: Verify Transaction")
-	}
-	return false
+	/*
+		if !bc.VerifyTransactionSignature(senderPublicKey, signature, t) {
+			log.Error("ERROR: Invalid signature")
+			return false
+		}
+	*/
 
+	/*
+		if bc.CalculateTotalAmount(sender) < value {
+			log.Println("ERROR: Not enough balance in a wallet")
+			return false
+		}
+	*/
+
+	bc.transactionPool = append(bc.transactionPool, t)
+	return true
 }
 
 func (bc *Blockchain) VerifyTransactionSignature(
-	senderPublicKey *ecdsa.PublicKey, s *utils.Signature, t *Transaction) bool {
+	senderPublicKey *ecdsa.PublicKey, signature *utils.Signature, t *Transaction) bool {
+	log.Debugf("senderPublicKey = %v\n", senderPublicKey)
+	log.Debugf("signature = %v\n", signature)
+	t.Print()
 	m, _ := json.Marshal(t)
 	h := sha256.Sum256([]byte(m))
-	return ecdsa.Verify(senderPublicKey, h[:], s.R, s.S)
+	return ecdsa.Verify(senderPublicKey, h[:], signature.R, signature.S)
 }
 
 func (bc *Blockchain) CopyTransactionPool() []*Transaction {
