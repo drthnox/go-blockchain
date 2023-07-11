@@ -30,8 +30,8 @@ func String2BigIntTuple(s string) (big.Int, big.Int) {
 	return bix, biy
 }
 
-func SignatureFromString(s string) *Signature {
-	x, y := String2BigIntTuple(s)
+func SignatureFromString(signatureStr string) *Signature {
+	x, y := String2BigIntTuple(signatureStr)
 	return &Signature{&x, &y}
 }
 

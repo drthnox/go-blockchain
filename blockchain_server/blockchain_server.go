@@ -87,7 +87,7 @@ func (bcs *BlockchainServer) Transactions(w http.ResponseWriter, req *http.Reque
 			return
 		}
 		publicKey := utils.PublicKeyFromString(*t.SenderPublicKey)
-		signature := utils.SignatureFromString(*t.SenderPublicKey)
+		signature := utils.SignatureFromString(*t.Signature)
 		bc := bcs.GetBlockchain()
 		isCreated := bc.CreateTransaction(*t.SenderBlockchainAddress, *t.RecipientBlockchainAddress, *t.Value, publicKey, signature)
 		w.Header().Add("Content-Type", "application/json")

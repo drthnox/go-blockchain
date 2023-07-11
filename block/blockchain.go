@@ -128,12 +128,10 @@ func (bc *Blockchain) AddTransaction(sender string, recipient string, value floa
 		return true
 	}
 
-	/*
-		if !bc.VerifyTransactionSignature(senderPublicKey, signature, t) {
-			log.Error("ERROR: Invalid signature")
-			return false
-		}
-	*/
+	if !bc.VerifyTransactionSignature(senderPublicKey, signature, t) {
+		log.Error("ERROR: Invalid signature")
+		return false
+	}
 
 	/*
 		if bc.CalculateTotalAmount(sender) < value {
