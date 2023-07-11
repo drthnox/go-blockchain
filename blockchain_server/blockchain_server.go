@@ -145,9 +145,9 @@ func (bcs *BlockchainServer) StartMine(w http.ResponseWriter, req *http.Request)
 func (bcs *BlockchainServer) GetTotalAmount(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		blockchain_address := req.URL.Query().Get("blockchain_address")
+		blockchainAddress := req.URL.Query().Get("blockchain_address")
 		bc := bcs.GetBlockchain()
-		totalAmount := bc.CalculateTotalAmount(blockchain_address)
+		totalAmount := bc.CalculateTotalAmount(blockchainAddress)
 		amountResponse := &block.AmountResponse{Amount: totalAmount}
 		var m []byte
 		m, _ = amountResponse.MarshalJSON()
